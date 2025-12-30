@@ -1,0 +1,35 @@
+# --- Python Internals ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+Lib/
+Scripts/
+
+# --- Environment Variables ---
+.env
+.env.*
+!.env.example 
+
+# --- IDE Settings ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Testing & Coverage ---
+.coverage
+htmlcov/
+.pytest_cache/
+
+# --- Database ---
+*.sqlite3
+*.db
+
+# --- OS Generated Files ---
+.DS_Store
+Thumbs.db
