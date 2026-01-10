@@ -18,41 +18,52 @@ router = APIRouter(
     tags=['auth']
 )
 
+
 load_dotenv()
 
+
 SECRET_KEY = os.getenv("SECRET_KEY")
+
 ALGORITHM = os.getenv("ALGORITHM")
 
+
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated = 'auto')
+
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 
 
 class CreateUserRequest(BaseModel):
-    email:EmailStr
-    password:str = Field(min_length = 6)
+    email: EmailStr  
+    password: str = Field(min_length=6) 
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
+    access_token: str 
+    token_type: str   
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_user(db: db_dependency, 
                       create_user_request: CreateUserRequest):
+    
+    
     existing_user = db.query(User).filter(User.email == create_user_request.email).first()
+    
+    
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already exists")
+    
+    
     create_user_model = User(
         email = create_user_request.email,
         hashed_password = bcrypt_context.hash(create_user_request.password)
     )
 
+    
     db.add(create_user_model)
     db.commit()
 
@@ -61,38 +72,50 @@ def create_user(db: db_dependency,
 def login_for_acess_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                 db: db_dependency):
     
+
     user = authenticate_user(form_data.username, form_data.password, db)
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user!")
+    
     token = create_access_token(user.email, user.id, timedelta(minutes=20))
 
     return {'access_token': token, 'token_type': 'bearer'}
 
 
+# Helper Functions
 def authenticate_user(email: EmailStr, password:str, db):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return False
+    
     if not bcrypt_context.verify(password, user.hashed_password):
         return False
+    
     return user
 
 
 def create_access_token(email: EmailStr, user_id: int, expires_delta: timedelta):
     encode = {'sub': email, 'id': user_id}
+    
     expires = datetime.utcnow() + expires_delta
+    
     encode.update({'exp': expires})
+    
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        
         email: str = payload.get('sub')
         user_id: int = payload.get('id')
+        
         if email is None or user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
         
         return {'email': email, 'id': user_id}
+    
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')

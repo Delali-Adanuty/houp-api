@@ -5,11 +5,13 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 import auth
 from auth import get_current_user
+from sqlmodel import SQLModel
+from models import User, Ride
 
 app = FastAPI()
 app.include_router(auth.router)
 
-# models.Base.metadata.create_all(bind = engine)
+SQLModel.metadata.create_all(engine)
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
